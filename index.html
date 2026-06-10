@@ -298,16 +298,18 @@
             clue: "It's worth waiting a week to see this",
             startingWord: { word: "newspaper", row: 5, startCol: 0, direction: "horizontal" },
             rack: [
-                { id: "t1", char: "a", flipChar: "e", isFlipped: false, score: 1 }, // Flips to e (First flippable e)
+                { id: "t1", char: "a", flipChar: "e", isFlipped: false, score: 1 }, 
                 { id: "t2", char: "r", flipChar: null, isFlipped: false, score: 1 },
                 { id: "t3", char: "v", flipChar: null, isFlipped: false, score: 4 },
-                { id: "t4", char: "q", flipChar: "b", isFlipped: false, score: 3 }, // Flips to b
+                { id: "t4", char: "q", flipChar: "b", isFlipped: false, score: 3 }, 
                 { id: "t5", char: "o", flipChar: null, isFlipped: false, score: 1 },
-                { id: "t6", char: "a", flipChar: "e", isFlipped: false, score: 1 }, // Flips to e (Second flippable e!)
+                { id: "t6", char: "a", flipChar: "e", isFlipped: false, score: 1 }, 
                 { id: "t7", char: "r", flipChar: null, isFlipped: false, score: 1 }  
             ],
             targetWord: "observer",
-            solution: { row: 3, startCol: 3, direction: "vertical" } 
+            solution: { row: 3, startCol: 3, direction: "vertical" },
+            // FIX: Explicit control string for final presentation layout!
+            phraseDisplay: "OBSERVER NEWSPAPER" 
         };
 
         const BOARD_ROWS = 11;
@@ -334,7 +336,7 @@
             renderRack();
             setupGlobalPointerUp();
 
-            // POP-UP ON LOAD: Remove hidden state right as the script launches
+            // POP-UP ON LOAD
             document.getElementById('tutorialModal').classList.remove('hidden');
         }
 
@@ -660,8 +662,9 @@
                 }, index * 150); 
             });
 
+            // FIX: Pull directly from the customizable levelData template definition!
             const clueEl = document.getElementById('clueText');
-            clueEl.innerText = "Correct! The phrase is " + levelData.startingWord.word.toUpperCase() + " " + levelData.targetWord.toUpperCase();
+            clueEl.innerText = "Correct! The phrase is " + levelData.phraseDisplay;
             clueEl.style.color = "#22c55e";
 
             setTimeout(() => {
@@ -694,7 +697,6 @@
                 }
             }
 
-            // High abstraction output to keep answers completely hidden from public feeds
             let shareText = `Cross Flip - Daily Puzzle\n\n`;
             shareText += `🧩 Phrase Solved!\n`;
             shareText += `🔄 Flips used: ${flipsUsed}\n`;
