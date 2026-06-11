@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cross Flip: Prototype Edition</title>
+    <title>Cross Flip: Daily Chain</title>
     <link href="https://fonts.googleapis.com/css2?family=Tourney:wght@700;800;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
     
     <style>
@@ -20,10 +20,7 @@
             --text-muted: #cbd5e1;
             --modal-bg: linear-gradient(180deg, #1e293b, #0f172a);
             --modal-border: #334155;
-            
-            /* Hint Highlight Colors */
-            --hint-blue: rgba(59, 130, 246, 0.25);
-            --hint-green: rgba(34, 197, 94, 0.3);
+            --hint-green: rgba(34, 197, 94, 0.2);
         }
 
         body {
@@ -39,7 +36,7 @@
             box-sizing: border-box;
             overflow-x: hidden;
             user-select: none;
-            touch-action: none; /* Prevents mobile scrolling while dragging */
+            touch-action: none;
         }
 
         /* --- Header System --- */
@@ -49,13 +46,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             padding: 0 5px;
             box-sizing: border-box;
         }
         .game-title {
             font-family: 'Tourney', sans-serif;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             margin: 0;
             color: var(--tile-white);
             text-transform: uppercase;
@@ -73,30 +70,43 @@
             padding: 4px 8px;
             border-radius: 6px;
             border: 1px solid rgba(255,255,255,0.1);
+            transition: color 0.2s, transform 0.2s;
         }
-        .util-btn {
+        /* Penalty Flash Animation */
+        .timer-penalty {
+            color: #ef4444 !important;
+            transform: scale(1.15);
+            border-color: #ef4444;
+        }
+
+        .help-circle {
             background: rgba(255, 255, 255, 0.1);
             color: white;
             border: 2px solid white;
-            border-radius: 8px;
-            padding: 4px 10px;
-            font-size: 0.9rem;
-            font-weight: 900;
-            cursor: pointer;
-            box-shadow: 0 3px 0 rgba(255, 255, 255, 0.2);
-        }
-        .util-btn:active {
-            transform: translateY(3px);
-            box-shadow: 0 0 0 transparent;
-        }
-        .help-circle {
             border-radius: 50%;
             width: 32px;
             height: 32px;
-            padding: 0;
+            font-size: 1.1rem;
+            font-weight: 900;
+            cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
+            box-shadow: 0 3px 0 rgba(255, 255, 255, 0.2);
+            transition: transform 0.1s;
+        }
+        .help-circle:active { transform: translateY(3px); box-shadow: 0 0 0 transparent; }
+
+        .round-tracker {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            font-weight: 900;
+            color: var(--tile-yellow);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
         }
 
         /* --- UI Containers --- */
@@ -110,12 +120,13 @@
             margin-bottom: 10px;
             text-align: center;
             box-sizing: border-box;
+            transition: opacity 0.3s;
         }
         .clue-header {
             font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: var(--tile-yellow);
+            color: var(--text-muted);
             margin-bottom: 4px;
             font-weight: 900;
         }
@@ -125,10 +136,10 @@
             line-height: 1.3;
         }
 
-        /* --- Row of Separate Hint Buttons --- */
+        /* --- Hint Bar --- */
         .hint-bar {
             display: flex;
-            gap: 6px;
+            gap: 10px;
             width: 100%;
             max-width: 420px;
             margin-bottom: 15px;
@@ -140,28 +151,32 @@
             color: #ffffff;
             border: 1px solid #334155;
             border-radius: 8px;
-            padding: 6px 4px;
-            font-size: 0.72rem;
+            padding: 8px;
+            font-size: 0.85rem;
             font-weight: 800;
             cursor: pointer;
             text-transform: uppercase;
             font-family: inherit;
             box-shadow: 0 3px 0 #0f172a;
             transition: all 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
         }
         .hint-action-btn:active:not(:disabled) {
             transform: translateY(3px);
             box-shadow: 0 0 0 transparent;
         }
         .hint-action-btn:disabled {
-            opacity: 0.3;
+            opacity: 0.4;
             cursor: not-allowed;
             transform: translateY(3px);
             box-shadow: 0 0 0 transparent;
             background: #0f172a;
         }
 
-        /* --- 9x11 Game Board Matrix --- */
+        /* --- Board --- */
         #board {
             display: grid;
             grid-template-columns: repeat(9, 1fr);
@@ -177,6 +192,7 @@
             box-shadow: inset 0 8px 16px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
             box-sizing: border-box;
             position: relative;
+            transition: opacity 0.3s;
         }
 
         .cell {
@@ -187,21 +203,21 @@
             justify-content: center;
             align-items: center;
             position: relative;
+            transition: background 0.1s, transform 0.1s;
         }
 
-        /* Hint States Applied onto Cells */
-        .cell.hint-col-active { background: var(--hint-blue); border: 1px dashed #3b82f6; }
-        .cell.hint-pos-active { background: var(--hint-green); border: 1px solid #22c55e; }
-        .cell-ghost-text {
-            font-family: 'Tourney', sans-serif;
-            font-size: 2.2rem;
-            font-weight: 900;
-            color: #22c55e;
-            opacity: 0.4;
-            pointer-events: none;
+        .cell.drag-over {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: inset 0 0 0 2px var(--tile-yellow);
+            transform: scale(1.05);
+            z-index: 5;
         }
+        .rack-slot.drag-over { background: rgba(255, 255, 255, 0.1); border-radius: 8px; }
 
-        /* --- Tile Design System (Scores Removed) --- */
+        .cell.hint-pos-active { background: var(--hint-green); border: 2px dashed #4ade80; }
+        .cell-ghost-text { font-family: 'Tourney', sans-serif; font-size: 2.2rem; font-weight: 900; color: #4ade80; opacity: 0.6; pointer-events: none; }
+
+        /* --- Tiles --- */
         .tile {
             width: 92%;
             height: 92%;
@@ -252,11 +268,8 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             z-index: 10;
         }
-        
-        .tile.hint-flash-active { border: 3px solid #ef4444 !important; animation: flashGlow 0.8s infinite alternate; }
-        @keyframes flashGlow { 0% { box-shadow: 0 0 2px #ef4444; } 100% { box-shadow: 0 0 14px #ef4444; } }
 
-        /* --- Trays & Action Bars --- */
+        /* --- Dynamic Rack --- */
         #rack-container {
             width: 100%;
             max-width: 420px;
@@ -267,40 +280,34 @@
             margin-top: 20px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.4);
             box-sizing: border-box;
+            transition: opacity 0.3s;
         }
-        #rack { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; height: 52px; }
-        .rack-slot { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        #rack { display: flex; justify-content: center; gap: 8px; height: 48px; }
+        .rack-slot { height: 100%; aspect-ratio: 1 / 1; position: relative; }
 
-        .controls { display: flex; gap: 12px; width: 100%; max-width: 420px; margin-top: 15px; }
-
+        /* --- Controls --- */
+        .controls { display: flex; gap: 12px; width: 100%; max-width: 420px; margin-top: 15px; position: relative; z-index: 100;}
         .btn {
             flex: 1; padding: 12px; font-size: 1.1rem; font-weight: 900;
             border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase;
             font-family: inherit; box-shadow: 0 5px 0 rgba(0,0,0,0.3); transition: transform 0.05s, box-shadow 0.05s;
         }
         .btn:active { transform: translateY(5px); box-shadow: 0 0 0 rgba(0,0,0,0.3); }
-
         .btn-clear { background: #64748b; color: white; box-shadow: 0 5px 0 #334155; }
         .btn-submit { background: #22c55e; color: white; box-shadow: 0 5px 0 #15803d; }
         .btn-share { background: #3b82f6; color: white; box-shadow: 0 5px 0 #1d4ed8; display: none; }
 
-        /* --- Modal Elements --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 99999; backdrop-filter: blur(5px); }
+        /* --- Modal --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 99999; backdrop-filter: blur(5px); transition: opacity 0.3s; }
         .modal-content { background: var(--modal-bg); padding: 25px 20px; border-radius: 16px; border: 2px solid var(--modal-border); max-width: 360px; width: 90%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); box-sizing: border-box; }
         .modal-content h2 { margin-top: 0; color: #ffffff; font-size: 2rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 900; margin-bottom: 10px;}
         .tutorial-text { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 25px; line-height: 1.5; font-weight: 700;}
         .tutorial-text span.highlight { color: #ef4444; font-weight: 900; font-size: 1.3rem;}
         .tutorial-text span.yellow { color: var(--tile-yellow); font-weight: 900; }
-        
-        .close-modal-btn { 
-            padding: 12px 24px; font-size: 1.2rem; font-weight: 800; 
-            background: #22c55e; color: #ffffff; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; 
-            letter-spacing: 1px; font-family: inherit; box-shadow: 0 5px 0 #15803d; transition: all 0.1s; width: 100%; 
-        }
+        .close-modal-btn { padding: 12px 24px; font-size: 1.2rem; font-weight: 800; background: #22c55e; color: #ffffff; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-family: inherit; box-shadow: 0 5px 0 #15803d; transition: all 0.1s; width: 100%; }
         .close-modal-btn:active { transform: translateY(5px); box-shadow: 0 0 0 #15803d; }
-        .hidden { display: none !important; }
+        .hidden { opacity: 0; pointer-events: none; }
 
-        /* --- Animations --- */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-6px); }
@@ -308,7 +315,7 @@
             75% { transform: translateX(-6px); }
         }
         .shake { animation: shake 0.3s ease-in-out; }
-
+        
         @keyframes winDance {
             0%, 100% { transform: translateY(0) scale(1); }
             50% { transform: translateY(-15px) scale(1.1) rotate(5deg); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
@@ -322,32 +329,33 @@
         <h1 class="game-title">Cross Flip</h1>
         <div class="header-controls">
             <div id="timerDisplay" class="timer-display">00:00</div>
-            <button id="helpBtn" class="util-btn help-circle" aria-label="How to play">?</button>
+            <button id="helpBtn" class="help-circle" aria-label="How to play">?</button>
         </div>
     </header>
 
-    <div id="tutorialModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div id="roundTracker" class="round-tracker">Word 1 of 4</div>
+
+    <div id="tutorialModal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h2>How to Play</h2>
+            <h2>The Daily Chain</h2>
             <p class="tutorial-text">
-                Solve the daily phrase!<br><br>
-                Drag your 7 tiles onto the board to build a word intersecting with the <span class="yellow">yellow word</span>.<br><br>
-                <strong>The Twist:</strong> Tap the <span class="highlight">↻</span> icon to spin tiles 180° anytime—even on the board!
+                Solve the evolving crossword!<br><br>
+                Drag <strong>all your tiles</strong> onto the board to build a word intersecting with the <span class="yellow">anchor word</span>.<br><br>
+                <strong>The Twist:</strong> Tap the <span class="highlight">↻</span> icon to spin tiles 180° anytime. <br><br>
+                <em>Need a hint? It will add <strong>+30 seconds</strong> to your final time!</em>
             </p>
-            <button class="close-modal-btn" id="closeTutorialBtn">Got it!</button>
+            <button class="close-modal-btn" id="closeTutorialBtn">Start Playing</button>
         </div>
     </div>
 
     <div class="clue-container" id="clueContainer">
-        <div class="clue-header">Today's Clue</div>
+        <div class="clue-header">Current Clue</div>
         <div id="clueText" class="clue-text">Loading clue...</div>
     </div>
 
     <div class="hint-bar">
-        <button id="hintColBtn" class="hint-action-btn">Col</button>
-        <button id="hintPosBtn" class="hint-action-btn">Pos</button>
-        <button id="hintRackBtn" class="hint-action-btn">Rack</button>
-        <button id="hintGhostBtn" class="hint-action-btn">Letter</button>
+        <button id="hintPosBtn" class="hint-action-btn">💡 Location</button>
+        <button id="hintGhostBtn" class="hint-action-btn">💡 Starts With</button>
     </div>
 
     <div id="board"></div>
@@ -363,50 +371,123 @@
     </div>
 
     <script>
-        // --- 1. Game Level Configuration (Scores Stripped) ---
-        const levelData = {
-            clue: "It's worth waiting a week to see this",
-            startingWord: { word: "newspaper", row: 5, startCol: 0, direction: "horizontal" },
-            rack: [
-                { id: "t1", char: "a", flipChar: "e", isFlipped: false }, 
-                { id: "t2", char: "r", flipChar: null, isFlipped: false },
-                { id: "t3", char: "v", flipChar: null, isFlipped: false },
-                { id: "t4", char: "q", flipChar: "b", isFlipped: false }, // Flips to b
-                { id: "t5", char: "o", flipChar: null, isFlipped: false },
-                { id: "t6", char: "e", flipChar: "a", isFlipped: false }, // Flips to e
-                { id: "t7", char: "r", flipChar: null, isFlipped: false }  
-            ],
-            targetWord: "observer",
-            solution: { row: 3, startCol: 3, direction: "vertical" },
-            phraseDisplay: "OBSERVER NEWSPAPER" 
-        };
+        // --- 1. Continuous Game Chain Database ---
+        const gameData = [
+            {
+                clue: "Writing tool that can be sharpened",
+                startingWord: { word: "write", row: 3, startCol: 2, direction: "horizontal" },
+                rack: [
+                    { id: "t1", char: "d", flipChar: "p", isFlipped: false },
+                    { id: "t2", char: "n", flipChar: "u", isFlipped: false }, 
+                    { id: "t3", char: "c", flipChar: null, isFlipped: false },
+                    { id: "t4", char: "i", flipChar: null, isFlipped: false },
+                    { id: "t5", char: "l", flipChar: null, isFlipped: false }
+                ],
+                targetWord: "pencil",
+                solution: { row: 2, startCol: 6, direction: "vertical" }
+            },
+            {
+                clue: "Bound sheets for jotting things down",
+                startingWord: { word: "pencil", row: 2, startCol: 6, direction: "vertical" },
+                rack: [
+                    { id: "t1", char: "n", flipChar: "u", isFlipped: false }, 
+                    { id: "t2", char: "o", flipChar: null, isFlipped: false },
+                    { id: "t3", char: "t", flipChar: null, isFlipped: false },
+                    { id: "t4", char: "a", flipChar: "e", isFlipped: false }, 
+                    { id: "t5", char: "a", flipChar: "e", isFlipped: false }, 
+                    { id: "t6", char: "d", flipChar: "p", isFlipped: false }  
+                ],
+                targetWord: "notepad",
+                solution: { row: 2, startCol: 2, direction: "horizontal" }
+            },
+            {
+                clue: "Clark Kent worked for one",
+                startingWord: { word: "notepad", row: 2, startCol: 2, direction: "horizontal" },
+                rack: [
+                    { id: "t1", char: "u", flipChar: "n", isFlipped: false }, 
+                    { id: "t2", char: "m", flipChar: "w", isFlipped: false }, 
+                    { id: "t3", char: "s", flipChar: null, isFlipped: false },
+                    { id: "t4", char: "d", flipChar: "p", isFlipped: false }, 
+                    { id: "t5", char: "e", flipChar: "a", isFlipped: false }, 
+                    { id: "t6", char: "p", flipChar: null, isFlipped: false },
+                    { id: "t7", char: "e", flipChar: null, isFlipped: false },
+                    { id: "t8", char: "r", flipChar: null, isFlipped: false }
+                ],
+                targetWord: "newspaper",
+                solution: { row: 1, startCol: 5, direction: "vertical" }
+            },
+            {
+                clue: "Watch out for the Sunday papers",
+                startingWord: { word: "newspaper", row: 1, startCol: 5, direction: "vertical" },
+                rack: [
+                    { id: "t1", char: "o", flipChar: null, isFlipped: false },
+                    { id: "t2", char: "q", flipChar: "b", isFlipped: false }, 
+                    { id: "t3", char: "s", flipChar: null, isFlipped: false },
+                    { id: "t4", char: "a", flipChar: "e", isFlipped: false }, 
+                    { id: "t5", char: "v", flipChar: null, isFlipped: false },
+                    { id: "t6", char: "e", flipChar: "a", isFlipped: false }, 
+                    { id: "t7", char: "r", flipChar: null, isFlipped: false }
+                ],
+                targetWord: "observer",
+                solution: { row: 9, startCol: 1, direction: "horizontal" }
+            }
+        ];
 
         const BOARD_ROWS = 11;
         const BOARD_COLS = 9;
         
-        let boardState = Array.from({ length: BOARD_ROWS }, () => 
-            Array.from({ length: BOARD_COLS }, () => ({ baseChar: null, placedTile: null }))
-        );
-        let rackState = [...levelData.rack];
+        let boardState = [];
+        let rackState = [];
+        let currentStageIdx = 0;
         
-        // UI & Metrics State Engines
-        let gameWon = false;
+        // Timer & Hint State Parameters
+        let gameActive = false;
         let timerInterval = null;
         let secondsElapsed = 0;
         let hintsUsedCount = 0;
 
-        let activeHints = {
-            column: false,
-            position: false,
-            rack: false,
-            ghost: false
-        };
+        let activeHints = { position: false, ghost: false };
 
-        // --- 2. Initialization Engine ---
+        // --- Utility: Fisher-Yates Array Shuffle ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // --- 2. Core Engine & State Management ---
         function initGame() {
-            document.getElementById('clueText').innerText = levelData.clue;
+            document.getElementById('tutorialModal').classList.remove('hidden');
+            setupHintListeners();
+        }
+
+        function startGame() {
+            gameActive = true;
+            startTimer();
+            loadStage(currentStageIdx);
+        }
+
+        function loadStage(stageIdx) {
+            const stageData = gameData[stageIdx];
             
-            const { word, row, startCol, direction } = levelData.startingWord;
+            document.getElementById('roundTracker').innerText = `Word ${stageIdx + 1} of ${gameData.length}`;
+            document.getElementById('clueText').innerText = stageData.clue;
+            document.getElementById('clueText').style.color = "";
+
+            boardState = Array.from({ length: BOARD_ROWS }, () => 
+                Array.from({ length: BOARD_COLS }, () => ({ baseChar: null, placedTile: null }))
+            );
+            
+            // Deep copy and SHUFFLE the rack for this stage
+            rackState = JSON.parse(JSON.stringify(stageData.rack));
+            shuffleArray(rackState);
+            
+            // Reset Hint Buttons for the new stage
+            activeHints = { position: false, ghost: false };
+            document.querySelectorAll('.hint-action-btn').forEach(btn => btn.disabled = false);
+
+            const { word, row, startCol, direction } = stageData.startingWord;
             for (let i = 0; i < word.length; i++) {
                 let r = direction === 'vertical' ? row + i : row;
                 let c = direction === 'vertical' ? startCol : startCol + i;
@@ -415,21 +496,25 @@
 
             renderBoard();
             renderRack();
-            setupGlobalPointerUp();
-            setupHintListeners();
-            startTimer();
-
-            document.getElementById('tutorialModal').classList.remove('hidden');
+            
+            document.getElementById('board').style.opacity = 1;
+            document.getElementById('rack-container').style.opacity = 1;
+            document.getElementById('clueContainer').style.opacity = 1;
         }
 
-        // --- 3. Live Game Clock Routine ---
+        // --- 3. Live Game Clock ---
         function startTimer() {
             timerInterval = setInterval(() => {
+                if(!gameActive) return;
                 secondsElapsed++;
-                const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
-                const secs = String(secondsElapsed % 60).padStart(2, '0');
-                document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
+                updateTimerDisplay();
             }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+            const secs = String(secondsElapsed % 60).padStart(2, '0');
+            document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
         }
 
         function getFormattedTime() {
@@ -439,18 +524,32 @@
         }
 
         // --- 4. Hint Controller Actions ---
+        function applyHintPenalty() {
+            secondsElapsed += 30; // Instant 30s penalty
+            hintsUsedCount++;
+            
+            // Visual feedback flash
+            const timerEl = document.getElementById('timerDisplay');
+            timerEl.classList.add('timer-penalty');
+            updateTimerDisplay();
+            
+            setTimeout(() => {
+                timerEl.classList.remove('timer-penalty');
+            }, 400);
+        }
+
         function setupHintListeners() {
-            document.getElementById('hintColBtn').addEventListener('click', (e) => {
-                activeHints.column = true; hintsUsedCount++; e.target.disabled = true; renderBoard();
+            document.getElementById('hintPosBtn').addEventListener('click', (e) => { 
+                activeHints.position = true; 
+                applyHintPenalty();
+                e.target.disabled = true; 
+                renderBoard(); 
             });
-            document.getElementById('hintPosBtn').addEventListener('click', (e) => {
-                activeHints.position = true; hintsUsedCount++; e.target.disabled = true; renderBoard();
-            });
-            document.getElementById('hintRackBtn').addEventListener('click', (e) => {
-                activeHints.rack = true; hintsUsedCount++; e.target.disabled = true; renderRack();
-            });
-            document.getElementById('hintGhostBtn').addEventListener('click', (e) => {
-                activeHints.ghost = true; hintsUsedCount++; e.target.disabled = true; renderBoard();
+            document.getElementById('hintGhostBtn').addEventListener('click', (e) => { 
+                activeHints.ghost = true; 
+                applyHintPenalty();
+                e.target.disabled = true; 
+                renderBoard(); 
             });
         }
 
@@ -459,7 +558,8 @@
             const boardEl = document.getElementById('board');
             boardEl.innerHTML = '';
             
-            const { row: sRow, startCol: sCol, direction: sDir } = levelData.solution;
+            const currentStageData = gameData[currentStageIdx];
+            const { row: sRow, startCol: sCol, direction: sDir } = currentStageData.solution;
             
             for (let r = 0; r < BOARD_ROWS; r++) {
                 for (let c = 0; c < BOARD_COLS; c++) {
@@ -468,14 +568,11 @@
                     cell.dataset.row = r;
                     cell.dataset.col = c;
                     
-                    const cellData = boardState[r][c];
+                    const cellData = boardState[r][c]; // <-- FIX RESTORED
                     
-                    // Apply visual hints selectively based on true state map
-                    if (activeHints.column && c === sCol) {
-                        cell.classList.add('hint-col-active');
-                    }
                     if (activeHints.position) {
-                        const isExactPos = (sDir === 'vertical' && c === sCol && r >= sRow && r < sRow + levelData.targetWord.length);
+                        const isExactPos = (sDir === 'vertical' && c === sCol && r >= sRow && r < sRow + currentStageData.targetWord.length) ||
+                                           (sDir === 'horizontal' && r === sRow && c >= sCol && c < sCol + currentStageData.targetWord.length);
                         if (isExactPos) cell.classList.add('hint-pos-active');
                     }
                     
@@ -492,7 +589,7 @@
                         topTile.className = 'tile rack-item'; 
                         topTile.innerText = activeChar;
                         
-                        if (!gameWon) {
+                        if (gameActive) {
                             topTile.addEventListener('pointerdown', (e) => startDrag(e, cellData.placedTile, 'board', topTile, r, c));
                             
                             if (cellData.placedTile.flipChar) {
@@ -510,7 +607,7 @@
                     } else if (activeHints.ghost && r === sRow && c === sCol && !cellData.baseChar) {
                         const ghost = document.createElement('div');
                         ghost.className = 'cell-ghost-text';
-                        ghost.innerText = levelData.targetWord[0];
+                        ghost.innerText = currentStageData.targetWord[0];
                         cell.appendChild(ghost);
                     }
                     
@@ -522,9 +619,6 @@
         function renderRack() {
             const rackEl = document.getElementById('rack');
             rackEl.innerHTML = '';
-            
-            const firstTargetChar = levelData.targetWord[0];
-            let highlightedOne = false;
 
             rackState.forEach((item, index) => {
                 const slot = document.createElement('div');
@@ -535,15 +629,8 @@
                     const tile = document.createElement('div');
                     tile.className = 'tile rack-item';
                     tile.innerText = item.isFlipped ? item.flipChar : item.char;
-                    
-                    if (activeHints.rack && !highlightedOne) {
-                        if (item.char === firstTargetChar || item.flipChar === firstTargetChar) {
-                            tile.classList.add('hint-flash-active');
-                            highlightedOne = true; 
-                        }
-                    }
 
-                    if (item.flipChar && !gameWon) {
+                    if (item.flipChar && gameActive) {
                         const flipBtn = document.createElement('div');
                         flipBtn.className = 'spin-trigger';
                         flipBtn.innerHTML = '↻';
@@ -554,7 +641,7 @@
                         slot.appendChild(flipBtn);
                     }
 
-                    if (!gameWon) {
+                    if (gameActive) {
                         tile.addEventListener('pointerdown', (e) => startDrag(e, item, 'rack', tile, index));
                     }
                     slot.appendChild(tile);
@@ -565,13 +652,13 @@
 
         // --- 6. Interactivity & Rotations ---
         function handleRackTileFlip(rackIndex) {
-            if (gameWon) return;
+            if (!gameActive) return;
             rackState[rackIndex].isFlipped = !rackState[rackIndex].isFlipped;
             renderRack(); 
         }
 
         function handleBoardTileFlip(row, col) {
-            if (gameWon) return;
+            if (!gameActive) return;
             const tileData = boardState[row][col].placedTile;
             if (tileData) {
                 tileData.isFlipped = !tileData.isFlipped;
@@ -580,7 +667,7 @@
         }
 
         function handleRecall() {
-            if (gameWon) return;
+            if (!gameActive) return;
             for (let r = 0; r < BOARD_ROWS; r++) {
                 for (let c = 0; c < BOARD_COLS; c++) {
                     const cellData = boardState[r][c];
@@ -595,7 +682,7 @@
             renderRack();
         }
 
-        // --- 7. Custom Pointer Drag Engine ---
+        // --- 7. Bulletproof Collision Drag Engine ---
         let dragSource = null; 
         let draggedData = null;
         let sourceIndex = null; 
@@ -604,9 +691,11 @@
         let ghostElement = null;
         let pointerOffset = { x: 0, y: 0 };
         let activeElementRef = null;
+        let currentDropTarget = null;
+        let currentDropType = null;
 
         function startDrag(e, item, source, element, arg1, arg2) {
-            if (gameWon) return;
+            if (!gameActive) return;
             e.preventDefault();
             
             dragSource = source;
@@ -639,6 +728,7 @@
 
             document.addEventListener('pointermove', onDragMove);
             document.addEventListener('pointerup', onDragEnd);
+            document.addEventListener('pointercancel', onDragEnd);
             
             element.style.opacity = '0.01'; 
         }
@@ -649,45 +739,100 @@
             ghostElement.style.top = `${clientY - pointerOffset.y}px`;
         }
 
-        function onDragMove(e) { updateGhostPosition(e.clientX, e.clientY); }
+        function findClosestDropZone(centerX, centerY) {
+            let closestTarget = null;
+            let minDistance = Infinity;
+            let dropType = null;
+            const maxSnapRadius = 45; 
+
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                const rect = cell.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                const dist = Math.hypot(cx - centerX, cy - centerY);
+                if (dist < minDistance && dist <= maxSnapRadius) {
+                    minDistance = dist;
+                    closestTarget = cell;
+                    dropType = 'cell';
+                }
+            });
+
+            if (!closestTarget) {
+                const slots = document.querySelectorAll('.rack-slot');
+                slots.forEach(slot => {
+                    const rect = slot.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    const dist = Math.hypot(cx - centerX, cy - centerY);
+                    if (dist < minDistance && dist <= maxSnapRadius) {
+                        minDistance = dist;
+                        closestTarget = slot;
+                        dropType = 'rack';
+                    }
+                });
+            }
+
+            return { target: closestTarget, type: dropType };
+        }
+
+        function onDragMove(e) { 
+            updateGhostPosition(e.clientX, e.clientY); 
+            
+            let foundTarget = null;
+            let foundType = null;
+            
+            if (ghostElement) {
+                const rect = ghostElement.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                const match = findClosestDropZone(centerX, centerY);
+                foundTarget = match.target;
+                foundType = match.type;
+            }
+
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            if (foundTarget) {
+                foundTarget.classList.add('drag-over');
+            }
+
+            currentDropTarget = foundTarget;
+            currentDropType = foundType;
+        }
 
         function onDragEnd(e) {
             document.removeEventListener('pointermove', onDragMove);
             document.removeEventListener('pointerup', onDragEnd);
+            document.removeEventListener('pointercancel', onDragEnd);
             
             if (ghostElement) { ghostElement.remove(); ghostElement = null; }
             if (activeElementRef) { activeElementRef.style.opacity = '1'; }
-        }
+            
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
 
-        function setupGlobalPointerUp() {
-            document.addEventListener('pointerup', (e) => {
-                if (!draggedData) return;
-
-                const targetEl = document.elementFromPoint(e.clientX, e.clientY);
-                const cell = targetEl ? targetEl.closest('.cell') : null;
-                const rackSlot = targetEl ? targetEl.closest('.rack-slot') : null;
-
-                if (cell) {
-                    const row = parseInt(cell.dataset.row);
-                    const col = parseInt(cell.dataset.col);
-                    
-                    if (boardState[row][col].baseChar) {
-                        executeRackRetract();
-                    } else {
-                        executeGridDrop(row, col);
-                    }
-                } else if (rackSlot && dragSource === 'board') {
-                    executeRackRetract();
-                } else if (dragSource === 'board') {
+            if (currentDropType === 'cell' && currentDropTarget) {
+                const row = parseInt(currentDropTarget.dataset.row);
+                const col = parseInt(currentDropTarget.dataset.col);
+                
+                if (boardState[row][col].baseChar) {
                     executeRackRetract();
                 } else {
-                    renderRack();
+                    executeGridDrop(row, col);
                 }
+            } else if (currentDropType === 'rack' && dragSource === 'board') {
+                executeRackRetract();
+            } else if (dragSource === 'board') {
+                executeRackRetract();
+            } else {
+                renderRack();
+            }
 
-                draggedData = null;
-                dragSource = null;
-                activeElementRef = null;
-            });
+            draggedData = null;
+            dragSource = null;
+            activeElementRef = null;
+            currentDropTarget = null;
+            currentDropType = null;
         }
 
         function executeGridDrop(row, col) {
@@ -714,14 +859,16 @@
             renderBoard(); renderRack();
         }
 
-        // --- 8. Validation Control ---
+        // --- 8. Validation Control & Round Progression ---
         function handleSubmit() {
+            if (!gameActive) return;
+
             const unusedTiles = rackState.filter(item => item !== null).length;
+            const currentStageData = gameData[currentStageIdx];
             
             if (unusedTiles > 0) {
                 const clueEl = document.getElementById('clueText');
-                const originalClue = levelData.clue;
-                clueEl.innerText = "You must use all 7 tiles!";
+                clueEl.innerText = `You must use all ${currentStageData.rack.length} tiles!`;
                 clueEl.style.color = "#ef4444"; 
                 
                 const rackEl = document.getElementById('rack-container');
@@ -729,15 +876,15 @@
                 void rackEl.offsetWidth; 
                 rackEl.classList.add('shake');
 
-                setTimeout(() => { clueEl.innerText = originalClue; clueEl.style.color = ""; }, 2000);
+                setTimeout(() => { clueEl.innerText = currentStageData.clue; clueEl.style.color = ""; }, 2000);
                 return; 
             }
 
-            const { row, startCol, direction } = levelData.solution;
+            const { row, startCol, direction } = currentStageData.solution;
             let formedWord = "";
             let playerTilesUsed = [];
 
-            for (let i = 0; i < levelData.targetWord.length; i++) {
+            for (let i = 0; i < currentStageData.targetWord.length; i++) {
                 let r = direction === 'vertical' ? row + i : row;
                 let c = direction === 'vertical' ? startCol : startCol + i;
                 
@@ -753,8 +900,8 @@
                 }
             }
 
-            if (formedWord === levelData.targetWord) {
-                triggerWin(playerTilesUsed);
+            if (formedWord === currentStageData.targetWord) {
+                triggerStageWin(playerTilesUsed);
             } else {
                 triggerError(playerTilesUsed);
             }
@@ -772,16 +919,15 @@
             });
             
             const clueEl = document.getElementById('clueText');
-            const originalClue = levelData.clue;
+            const originalClue = gameData[currentStageIdx].clue;
             clueEl.innerText = "Not quite! Try again.";
             clueEl.style.color = "#ef4444"; 
             
             setTimeout(() => { clueEl.innerText = originalClue; clueEl.style.color = ""; }, 2000);
         }
 
-        function triggerWin(placedTiles) {
-            gameWon = true;
-            clearInterval(timerInterval); // Halt clock
+        function triggerStageWin(placedTiles) {
+            gameActive = false; // Pause inputs during transition
 
             placedTiles.forEach((pos, index) => {
                 setTimeout(() => {
@@ -792,25 +938,108 @@
                         topTile.style.backgroundColor = "#22c55e"; 
                         topTile.style.color = "#ffffff";
                         topTile.style.borderColor = "#16a34a";
+                        const spinTrigger = topTile.querySelector('.spin-trigger');
+                        if (spinTrigger) spinTrigger.style.display = 'none';
                     }
-                }, index * 150); 
+                }, index * 100); 
             });
 
             const clueEl = document.getElementById('clueText');
-            clueEl.innerText = `Correct! Completed in ${getFormattedTime()}.`;
+            clueEl.innerText = "Correct!";
             clueEl.style.color = "#22c55e";
 
-            // Hide hint buttons to lock clean end dashboard layout
-            document.querySelector('.hint-bar').style.display = 'none';
+            const isLastStage = currentStageIdx === gameData.length - 1;
 
             setTimeout(() => {
-                document.getElementById('recallBtn').style.display = 'none';
-                document.getElementById('submitBtn').style.display = 'none';
-                document.getElementById('shareBtn').style.display = 'block';
-            }, 1000);
+                if (isLastStage) {
+                    triggerFinalWin();
+                } else {
+                    triggerStageTransition();
+                }
+            }, 1800);
         }
 
-        // --- 9. Refined Non-Spoiler Clipboard Share Module ---
+        function triggerStageTransition() {
+            document.getElementById('board').style.opacity = 0;
+            document.getElementById('rack-container').style.opacity = 0;
+            document.getElementById('clueContainer').style.opacity = 0;
+            
+            setTimeout(() => {
+                currentStageIdx++;
+                gameActive = true;
+                loadStage(currentStageIdx);
+            }, 300);
+        }
+
+        // --- 9. Final Fanfare & Fireworks ---
+        function triggerFinalWin() {
+            clearInterval(timerInterval);
+            document.getElementById('clueText').innerText = `Amazing! You solved the chain in ${getFormattedTime()}!`;
+            document.getElementById('clueText').style.color = "#22c55e";
+
+            document.querySelector('.hint-bar').style.display = 'none';
+            document.getElementById('recallBtn').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('shareBtn').style.display = 'block';
+            
+            triggerFireworks();
+        }
+
+        function triggerFireworks() {
+            setTimeout(() => {
+                const canvas = document.createElement('canvas');
+                canvas.style.position = 'fixed'; canvas.style.top = '0'; canvas.style.left = '0';
+                canvas.style.width = '100vw'; canvas.style.height = '100vh';
+                canvas.style.pointerEvents = 'none'; canvas.style.zIndex = '9999';
+                document.body.appendChild(canvas);
+
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+
+                let particles = [];
+                const colors = ['#fbbf24', '#38bdf8', '#22c55e', '#f43f5e', '#a855f7', '#ffffff'];
+
+                for (let b = 0; b < 4; b++) {
+                    setTimeout(() => {
+                        const originX = canvas.width / 2 + (Math.random() - 0.5) * 300;
+                        const originY = canvas.height / 3 + (Math.random() - 0.5) * 200;
+                        for (let i = 0; i < 180; i++) {
+                            particles.push({
+                                x: originX, y: originY,
+                                vx: (Math.random() - 0.5) * (Math.random() * 25 + 5),
+                                vy: (Math.random() - 0.5) * (Math.random() * 25 + 5),
+                                size: Math.random() * 6 + 2, color: colors[Math.floor(Math.random() * colors.length)],
+                                alpha: 1, decay: Math.random() * 0.015 + 0.005
+                            });
+                        }
+                    }, b * 350); 
+                }
+
+                const startTime = performance.now();
+
+                function animate() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    particles = particles.filter(p => p.alpha > 0);
+                    
+                    for (let i = 0; i < particles.length; i++) {
+                        let p = particles[i];
+                        p.vy += 0.2; p.vx *= 0.98; p.vy *= 0.98;
+                        p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
+                        ctx.globalAlpha = Math.max(0, p.alpha); ctx.fillStyle = p.color;
+                        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+                    }
+                    
+                    if (particles.length > 0 || performance.now() - startTime < 3000) { 
+                        requestAnimationFrame(animate); 
+                    } else { 
+                        canvas.remove(); 
+                    }
+                }
+                animate();
+            }, 500); 
+        }
+
+        // --- 10. Refined Non-Spoiler Clipboard Share Module ---
         function copyToClipboard(text) { 
             navigator.clipboard.writeText(text).then(() => {
                 const shareBtn = document.getElementById('shareBtn');
@@ -823,12 +1052,11 @@
         }
 
         async function handleShare() {
-            // FIX: Stripped literal answers and grid bounding-box shapes to prevent leaks
-            let shareText = `Cross Flip - Daily Puzzle\n\n`;
-            shareText += `🎉 Daily Phrase Solved!\n`;
-            shareText += `⏱️ Time Taken: ${getFormattedTime()}\n`;
+            let shareText = `Cross Flip - Daily Chain\n\n`;
+            shareText += `🏆 Puzzle Completed (${gameData.length} words)\n`;
+            shareText += `⏱️ Time Taken: ${getFormattedTime()} (inc. penalties)\n`;
             shareText += `💡 Hints Used: ${hintsUsedCount}\n\n`;
-            shareText += `Play at: https://venvoit.github.io/dailytwflip/`;
+            shareText += `Play at: https://crossflip.com`;
 
             if (navigator.share) {
                 try { await navigator.share({ text: shareText }); } 
@@ -848,6 +1076,9 @@
         });
         document.getElementById('closeTutorialBtn').addEventListener('click', () => {
             document.getElementById('tutorialModal').classList.add('hidden');
+            if(currentStageIdx === 0 && !gameActive) {
+                startGame();
+            }
         });
 
         document.addEventListener('DOMContentLoaded', initGame);
